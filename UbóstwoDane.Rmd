@@ -1,0 +1,1204 @@
+---
+title: "Kształtowanie polityki społecznej w zakresie zmniejszania stopy ubóstwa ekonomicznego w Polsce. Ocena efektywności obecnych narzędzi poprzez analizę wydatków budżetowych z wykorzystaniem modelu regresji liniowej." 
+output:
+  html_document:
+    fig_width: 12
+    fig_height: 7
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Ładowanie bibliotek
+
+```{r}
+library(dplyr)
+library(geojsonio)
+library(maps)
+library(sf)
+library(ggrepel)
+library(readxl)
+library(ggplot2)
+library(tidyr)
+library(knitr)
+library(kableExtra)
+library(ggthemes)
+options(scipen = 999)
+```
+
+## Ładowanie danych
+
+```{r}
+excel_file <- "UbóstwoDane.xlsx"
+
+sheet_name1 <- "Progi1"
+sheet_name2 <- "Progi4"
+sheet_name3 <- "UbóstwoOgólne"
+sheet_name4 <- "pracownicy"
+sheet_name5 <- "rolnicy"
+sheet_name6 <- "własnyrachunek"
+sheet_name7 <- "emeryci"
+sheet_name8 <- "renciści"
+sheet_name9 <- "niezarobkowe"
+sheet_name10 <- "źródłoutrzymaniaskrajne"
+sheet_name11 <- "źródłoutrzymaniarelatywne"
+sheet_name12 <- "źródłoutrzymaniaustawowe"
+sheet_name13 <- "MiejscowośćSkrajne"
+sheet_name14 <- "MiejscowośćRelatywne"
+sheet_name15 <- "MiejscowośćUstawowe"
+sheet_name16 <- "WiekSkrajne"
+sheet_name17 <- "WiekRelatywne"
+sheet_name18 <- "WiekUstawowe"
+sheet_name19 <- "DzieciSkrajne"
+sheet_name20 <- "DzieciRelatywne"
+sheet_name21 <- "DzieciUstawowe"
+sheet_name22 <- "Głębokość"
+sheet_name23 <- "NiedostatekProgi"
+sheet_name24 <- "Niedostatek"
+sheet_name25 <- "AROPE"
+sheet_name26 <- "WojAROP2008"
+sheet_name27 <- "WojAROP2022"
+
+Progi1 <- read_excel(excel_file, sheet = sheet_name1, col_names = TRUE)
+Progi4 <- read_excel(excel_file, sheet = sheet_name2, col_names = TRUE)
+UbóstwoOgólne <- read_excel(excel_file, sheet = sheet_name3, col_names = TRUE)
+pracownicy <- read_excel(excel_file, sheet = sheet_name4, col_names = TRUE)
+rolnicy <- read_excel(excel_file, sheet = sheet_name5, col_names = TRUE)
+własnyrachunek <- read_excel(excel_file, sheet = sheet_name6, col_names = TRUE)
+emeryci <- read_excel(excel_file, sheet = sheet_name7, col_names = TRUE)
+renciści <- read_excel(excel_file, sheet = sheet_name8, col_names = TRUE)
+niezarobkowe <- read_excel(excel_file, sheet = sheet_name9, col_names = TRUE)
+źródło_utrzymania_skrajne <- read_excel(excel_file, sheet = sheet_name10, col_names = TRUE)
+źródło_utrzymania_relatywne <- read_excel(excel_file, sheet = sheet_name11, col_names = TRUE)
+źródło_utrzymania_ustawowe <- read_excel(excel_file, sheet = sheet_name12, col_names = TRUE)
+MiejscowośćSkrajne <- read_excel(excel_file, sheet = sheet_name13, col_names = TRUE)
+MiejscowośćRelatywne <- read_excel(excel_file, sheet = sheet_name14, col_names = TRUE)
+MiejscowośćUstawowe <- read_excel(excel_file, sheet = sheet_name15, col_names = TRUE)
+WiekSkrajne <- read_excel(excel_file, sheet = sheet_name16, col_names = TRUE)
+WiekRelatywne <- read_excel(excel_file, sheet = sheet_name17, col_names = TRUE)
+WiekUstawowe <- read_excel(excel_file, sheet = sheet_name18, col_names = TRUE)
+DzieciSkrajne <- read_excel(excel_file, sheet = sheet_name19, col_names = TRUE)
+DzieciRelatywne <- read_excel(excel_file, sheet = sheet_name20, col_names = TRUE)
+DzieciUstawowe <- read_excel(excel_file, sheet = sheet_name21, col_names = TRUE)
+Głębokość <- read_excel(excel_file, sheet = sheet_name22, col_names = TRUE)
+NiedostatekProgi <- read_excel(excel_file, sheet = sheet_name23, col_names = TRUE)
+Niedostatek <- read_excel(excel_file, sheet = sheet_name24, col_names = TRUE)
+AROPE <- read_excel(excel_file, sheet = sheet_name25, col_names = TRUE)
+WojAROP2008 <- read_excel(excel_file, sheet = sheet_name26, col_names = TRUE)
+WojAROP2022 <- read_excel(excel_file, sheet = sheet_name27, col_names = TRUE)
+
+```
+
+## Progi1 Tabela
+
+```{r}
+Progi1Dane <- t(Progi1)
+colnames(Progi1Dane) <- Progi1Dane[1, ]
+Progi1Dane <- Progi1Dane[-1, ]
+
+Progi1Tabela <- kable(Progi1Dane, table.attr = "class='table'",align = "c", digits = 2) %>%
+  kable_paper(c("striped", "hover", "condensed", "responsive", full_width = F, position = "center")) %>% 
+  add_header_above(c("Progi ubóstwa dla gospodarstw 1-osobowych w latach 2008–2022 (zł)" = 16), align = "center")
+
+Progi1Tabela
+
+```
+
+## Progi1 Wykres
+
+```{r}
+Progi1Wykres <- ggplot(Progi1, aes(x = Rok)) +
+  geom_line(aes(y = `ubóstwo skrajne`, group = 1, color = "ubóstwo skrajne"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `ubóstwo skrajne`, color = "ubóstwo skrajne", shape = "ubóstwo skrajne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo relatywne`, group = 1, color = "ubóstwo relatywne"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo relatywne`, color = "ubóstwo relatywne", shape = "ubóstwo relatywne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo ustawowe`, group = 1, color = "ubóstwo ustawowe"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo ustawowe`, color = "ubóstwo ustawowe", shape = "ubóstwo ustawowe"), size = 3) +
+  
+geom_text_repel(aes(y = `ubóstwo skrajne`, label = round(`ubóstwo skrajne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo relatywne`, label = round(`ubóstwo relatywne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo ustawowe`, label = round(`ubóstwo ustawowe`, 2)), size = 3, color = "black") +
+  
+  scale_y_continuous(
+    breaks = seq(0, 1100, by = 100),
+    limits = c(0, 1100),
+    expand = c(0, 100)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("ubóstwo skrajne" = 15, "ubóstwo relatywne" = 16, "ubóstwo ustawowe" = 17)) +
+  theme(legend.position = "bottom") +
+  
+  labs(
+    x = "Rok",
+    y = "Wysokość progu w zł",
+    color = "Progi ubóstwa",
+    shape = "Progi ubóstwa"
+  )
+
+Progi1Wykres
+```
+
+## Progi4 Tabela
+
+```{r}
+Progi4Dane <- t(Progi4)
+colnames(Progi4Dane) <- Progi4Dane[1, ]
+Progi4Dane <- Progi4Dane[-1, ]
+
+Progi4Tabela <- kable(Progi4Dane, table.attr = "class='table'",align = "c", digits = 2) %>%
+  kable_paper(c("striped", "hover", "condensed", "responsive", full_width = F, position = "center")) %>% 
+  add_header_above(c("Progi ubóstwa dla gospodarstw 4-osobowych w latach 2008–2022 (zł)" = 16), align = "center")
+
+Progi4Tabela
+```
+
+## Progi4 Wykres
+
+```{r}
+Progi4Wykres <- ggplot(Progi4, aes(x = Rok)) +
+  geom_line(aes(y = `ubóstwo skrajne`, group = 1, color = "ubóstwo skrajne"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `ubóstwo skrajne`, color = "ubóstwo skrajne", shape = "ubóstwo skrajne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo relatywne`, group = 1, color = "ubóstwo relatywne"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo relatywne`, color = "ubóstwo relatywne", shape = "ubóstwo relatywne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo ustawowe`, group = 1, color = "ubóstwo ustawowe"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo ustawowe`, color = "ubóstwo ustawowe", shape = "ubóstwo ustawowe"), size = 3) +
+  
+  geom_text_repel(aes(y = `ubóstwo skrajne`, label = round(`ubóstwo skrajne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo relatywne`, label = round(`ubóstwo relatywne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo ustawowe`, label = round(`ubóstwo ustawowe`, 2)), size = 3, color = "black") +
+  
+  scale_y_continuous(
+    breaks = seq(0, 2800, by = 200),
+    limits = c(0, 2800),
+    expand = c(0, 200)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("ubóstwo skrajne" = 15, "ubóstwo relatywne" = 16, "ubóstwo ustawowe" = 17)) +
+  theme(legend.position = "bottom") +
+  
+  labs(
+    x = "Rok",
+    y = "Wysokość progu w zł",
+    color = "Progi ubóstwa",
+    shape = "Progi ubóstwa"
+  )
+
+Progi4Wykres
+```
+## UbóstwoOgólne Tabela
+
+```{r}
+UbóstwoOgólneDane <- t(UbóstwoOgólne)
+colnames(UbóstwoOgólneDane) <- UbóstwoOgólneDane[1, ]
+UbóstwoOgólneDane <- UbóstwoOgólneDane[-1, ]
+
+UbóstwoOgólneTabela <- kable(UbóstwoOgólneDane, table.attr = "class='table'",align = "c", digits = 2) %>%
+  kable_paper(c("striped", "hover", "condensed", "responsive", full_width = F, position = "center")) %>% 
+  add_header_above(c("Zasięg ubóstwa w Polsce w latach 2008–2022 (% osób w gospodarstwach domowych)" = 16), align = "center")
+
+UbóstwoOgólneTabela
+```
+
+## UbóstwoOgólne Wykres
+
+```{r}
+UbóstwoOgólneWykres <- ggplot(UbóstwoOgólne, aes(x = Rok)) +
+  geom_line(aes(y = `ubóstwo skrajne`, group = 1, color = "ubóstwo skrajne"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `ubóstwo skrajne`, color = "ubóstwo skrajne", shape = "ubóstwo skrajne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo relatywne`, group = 1, color = "ubóstwo relatywne"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo relatywne`, color = "ubóstwo relatywne", shape = "ubóstwo relatywne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo ustawowe`, group = 1, color = "ubóstwo ustawowe"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo ustawowe`, color = "ubóstwo ustawowe", shape = "ubóstwo ustawowe"), size = 3) +
+  
+geom_text_repel(aes(y = `ubóstwo skrajne`, label = round(`ubóstwo skrajne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo relatywne`, label = round(`ubóstwo relatywne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo ustawowe`, label = round(`ubóstwo ustawowe`, 2)), size = 3, color = "black") +
+  
+  scale_y_continuous(
+   breaks = seq(0, 20, by = 1),
+    limits = c(0, 20),
+    expand = c(0, 1)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("ubóstwo skrajne" = 15, "ubóstwo relatywne" = 16, "ubóstwo ustawowe" = 17)) +
+  theme(legend.position = "bottom") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg w %",
+    color = "Rodzaj ubóstwa",
+    shape = "Rodzaj ubóstwa"
+  )
+
+UbóstwoOgólneWykres
+```
+
+## Pracownicy Wykres
+
+```{r}
+pracownicyWykres <- ggplot(pracownicy, aes(x = Rok)) +
+  geom_line(aes(y = `ubóstwo skrajne`, group = 1, color = "ubóstwo skrajne"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `ubóstwo skrajne`, color = "ubóstwo skrajne", shape = "ubóstwo skrajne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo relatywne`, group = 1, color = "ubóstwo relatywne"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo relatywne`, color = "ubóstwo relatywne", shape = "ubóstwo relatywne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo ustawowe`, group = 1, color = "ubóstwo ustawowe"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo ustawowe`, color = "ubóstwo ustawowe", shape = "ubóstwo ustawowe"), size = 3) +
+  
+geom_text_repel(aes(y = `ubóstwo skrajne`, label = round(`ubóstwo skrajne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo relatywne`, label = round(`ubóstwo relatywne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo ustawowe`, label = round(`ubóstwo ustawowe`, 2)), size = 3, color = "black") +
+  
+  
+   scale_y_continuous(
+   breaks = seq(0, 20, by = 1),
+    limits = c(0, 20),
+    expand = c(0, 1)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("ubóstwo skrajne" = 15, "ubóstwo relatywne" = 16, "ubóstwo ustawowe" = 17)) +
+  theme(legend.position = "bottom") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg w %",
+    color = "Rodzaj ubóstwa",
+    shape = "Rodzaj ubóstwa"
+  )
+
+pracownicyWykres
+```
+
+## rolnicy Wykres
+
+```{r}
+rolnicyWykres <- ggplot(rolnicy, aes(x = Rok)) +
+  geom_line(aes(y = `ubóstwo skrajne`, group = 1, color = "ubóstwo skrajne"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `ubóstwo skrajne`, color = "ubóstwo skrajne", shape = "ubóstwo skrajne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo relatywne`, group = 1, color = "ubóstwo relatywne"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo relatywne`, color = "ubóstwo relatywne", shape = "ubóstwo relatywne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo ustawowe`, group = 1, color = "ubóstwo ustawowe"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo ustawowe`, color = "ubóstwo ustawowe", shape = "ubóstwo ustawowe"), size = 3) +
+  
+geom_text_repel(aes(y = `ubóstwo skrajne`, label = round(`ubóstwo skrajne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo relatywne`, label = round(`ubóstwo relatywne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo ustawowe`, label = round(`ubóstwo ustawowe`, 2)), size = 3, color = "black") +
+  
+   scale_y_continuous(
+   breaks = seq(0, 30, by = 1),
+    limits = c(0, 30),
+    expand = c(0, 1)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("ubóstwo skrajne" = 15, "ubóstwo relatywne" = 16, "ubóstwo ustawowe" = 17)) +
+  theme(legend.position = "bottom") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg w %",
+    color = "Rodzaj ubóstwa",
+    shape = "Rodzaj ubóstwa"
+  )
+
+rolnicyWykres
+```
+
+## własnyrachunek Wykres
+
+```{r}
+własnyrachunekWykres <- ggplot(własnyrachunek, aes(x = Rok)) +
+  geom_line(aes(y = `ubóstwo skrajne`, group = 1, color = "ubóstwo skrajne"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `ubóstwo skrajne`, color = "ubóstwo skrajne", shape = "ubóstwo skrajne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo relatywne`, group = 1, color = "ubóstwo relatywne"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo relatywne`, color = "ubóstwo relatywne", shape = "ubóstwo relatywne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo ustawowe`, group = 1, color = "ubóstwo ustawowe"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo ustawowe`, color = "ubóstwo ustawowe", shape = "ubóstwo ustawowe"), size = 3) +
+  
+geom_text_repel(aes(y = `ubóstwo skrajne`, label = round(`ubóstwo skrajne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo relatywne`, label = round(`ubóstwo relatywne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo ustawowe`, label = round(`ubóstwo ustawowe`, 2)), size = 3, color = "black") +
+  
+   scale_y_continuous(
+   breaks = seq(0, 11, by = 1),
+    limits = c(0, 11),
+    expand = c(0, 1)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("ubóstwo skrajne" = 15, "ubóstwo relatywne" = 16, "ubóstwo ustawowe" = 17)) +
+  theme(legend.position = "bottom") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg w %",
+    color = "Rodzaj ubóstwa",
+    shape = "Rodzaj ubóstwa"
+  )
+
+własnyrachunekWykres
+```
+
+## emeryci Wykres
+
+```{r}
+emeryciWykres <- ggplot(emeryci, aes(x = Rok)) +
+  geom_line(aes(y = `ubóstwo skrajne`, group = 1, color = "ubóstwo skrajne"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `ubóstwo skrajne`, color = "ubóstwo skrajne", shape = "ubóstwo skrajne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo relatywne`, group = 1, color = "ubóstwo relatywne"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo relatywne`, color = "ubóstwo relatywne", shape = "ubóstwo relatywne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo ustawowe`, group = 1, color = "ubóstwo ustawowe"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo ustawowe`, color = "ubóstwo ustawowe", shape = "ubóstwo ustawowe"), size = 3) +
+  
+geom_text_repel(aes(y = `ubóstwo skrajne`, label = round(`ubóstwo skrajne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo relatywne`, label = round(`ubóstwo relatywne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo ustawowe`, label = round(`ubóstwo ustawowe`, 2)), size = 3, color = "black") +
+  
+   scale_y_continuous(
+   breaks = seq(0, 15, by = 1),
+    limits = c(0, 15),
+    expand = c(0, 1)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("ubóstwo skrajne" = 15, "ubóstwo relatywne" = 16, "ubóstwo ustawowe" = 17)) +
+  theme(legend.position = "bottom") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg w %",
+    color = "Rodzaj ubóstwa",
+    shape = "Rodzaj ubóstwa"
+  )
+
+emeryciWykres
+```
+
+## renciści Wykres
+
+```{r}
+renciściWykres <- ggplot(renciści, aes(x = Rok)) +
+  geom_line(aes(y = `ubóstwo skrajne`, group = 1, color = "ubóstwo skrajne"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `ubóstwo skrajne`, color = "ubóstwo skrajne", shape = "ubóstwo skrajne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo relatywne`, group = 1, color = "ubóstwo relatywne"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo relatywne`, color = "ubóstwo relatywne", shape = "ubóstwo relatywne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo ustawowe`, group = 1, color = "ubóstwo ustawowe"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo ustawowe`, color = "ubóstwo ustawowe", shape = "ubóstwo ustawowe"), size = 3) +
+  
+geom_text_repel(aes(y = `ubóstwo skrajne`, label = round(`ubóstwo skrajne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo relatywne`, label = round(`ubóstwo relatywne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo ustawowe`, label = round(`ubóstwo ustawowe`, 2)), size = 3, color = "black") +
+  
+   scale_y_continuous(
+   breaks = seq(0, 30, by = 1),
+    limits = c(0, 30),
+    expand = c(0, 1)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("ubóstwo skrajne" = 15, "ubóstwo relatywne" = 16, "ubóstwo ustawowe" = 17)) +
+  theme(legend.position = "bottom") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg w %",
+    color = "Rodzaj ubóstwa",
+    shape = "Rodzaj ubóstwa"
+  )
+
+renciściWykres
+```
+
+## niezarobkowe Wykres
+
+```{r}
+niezarobkoweWykres <- ggplot(niezarobkowe, aes(x = Rok)) +
+  geom_line(aes(y = `ubóstwo skrajne`, group = 1, color = "ubóstwo skrajne"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `ubóstwo skrajne`, color = "ubóstwo skrajne", shape = "ubóstwo skrajne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo relatywne`, group = 1, color = "ubóstwo relatywne"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo relatywne`, color = "ubóstwo relatywne", shape = "ubóstwo relatywne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo ustawowe`, group = 1, color = "ubóstwo ustawowe"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo ustawowe`, color = "ubóstwo ustawowe", shape = "ubóstwo ustawowe"), size = 3) +
+  
+geom_text_repel(aes(y = `ubóstwo skrajne`, label = round(`ubóstwo skrajne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo relatywne`, label = round(`ubóstwo relatywne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo ustawowe`, label = round(`ubóstwo ustawowe`, 2)), size = 3, color = "black") +
+  
+   scale_y_continuous(
+   breaks = seq(0, 45, by = 2),
+    limits = c(0, 45),
+    expand = c(0, 2)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("ubóstwo skrajne" = 15, "ubóstwo relatywne" = 16, "ubóstwo ustawowe" = 17)) +
+  theme(legend.position = "bottom") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg w %",
+    color = "Rodzaj ubóstwa",
+    shape = "Rodzaj ubóstwa"
+  )
+
+niezarobkoweWykres
+```
+
+
+## źródło_utrzymania_skrajne 
+
+```{r}
+źródło_utrzymania_skrajne_wykres <- ggplot(źródło_utrzymania_skrajne, aes(x = Rok)) +
+  
+  geom_line(aes(y = `pracujący na własny rachunek`, group = 1, color = "pracujący na własny rachunek"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `pracujący na własny rachunek`, color = "pracujący na własny rachunek", shape = "pracujący na własny rachunek"), size = 3) +
+  
+  geom_line(aes(y = `pracownicy`, group = 1, color = "pracownicy"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `pracownicy`, color = "pracownicy", shape = "pracownicy"), size = 3) +
+  
+  geom_line(aes(y = `rolnicy`, group = 1, color = "rolnicy"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `rolnicy`, color = "rolnicy", shape = "rolnicy"), size = 3) +
+  
+   geom_line(aes(y = `emeryci`, group = 1, color = "emeryci"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `emeryci`, color = "emeryci", shape = "emeryci"), size = 3) +
+  
+   geom_line(aes(y = `renciści`, group = 1, color = "renciści"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `renciści`, color = "renciści", shape = "renciści"), size = 3) +
+  
+  geom_line(aes(y = `niezarobkowe źródła`, group = 1, color = "niezarobkowe źródła"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `niezarobkowe źródła`, color = "niezarobkowe źródła", shape = "niezarobkowe źródła"), size = 3) +
+  
+geom_text_repel(aes(y = `pracujący na własny rachunek`, label = round(`pracujący na własny rachunek`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `pracownicy`, label = round(`pracownicy`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `rolnicy`, label = round(`rolnicy`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `emeryci`, label = round(`emeryci`, 2)), size = 3, color = "black") +  
+geom_text_repel(aes(y = `renciści`, label = round(`renciści`, 2)), size = 3, color = "black") +  
+geom_text_repel(aes(y = `niezarobkowe źródła`, label = round(`niezarobkowe źródła`, 2)), size = 3, color = "black") +
+
+   scale_y_continuous(
+   breaks = seq(0, 26, by = 2),
+    limits = c(0, 26),
+    expand = c(0, 2)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("pracujący na własny rachunek" = 15, "pracownicy" = 16, "rolnicy" = 17, "emeryci" = 18, "renciści" = 19, "niezarobkowe źródła" = 20)) +
+  theme(legend.position = "left") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg ubóstwa skrajnego w %",
+    color = "Źródło utrzymania",
+    shape = "Źródło utrzymania"
+  )
+
+źródło_utrzymania_skrajne_wykres
+```
+
+## źródło_utrzymania_relatywne 
+
+```{r}
+źródło_utrzymania_relatywne_wykres <- ggplot(źródło_utrzymania_relatywne, aes(x = Rok)) +
+  
+  geom_line(aes(y = `pracujący na własny rachunek`, group = 1, color = "pracujący na własny rachunek"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `pracujący na własny rachunek`, color = "pracujący na własny rachunek", shape = "pracujący na własny rachunek"), size = 3) +
+  
+  geom_line(aes(y = `pracownicy`, group = 1, color = "pracownicy"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `pracownicy`, color = "pracownicy", shape = "pracownicy"), size = 3) +
+  
+  geom_line(aes(y = `rolnicy`, group = 1, color = "rolnicy"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `rolnicy`, color = "rolnicy", shape = "rolnicy"), size = 3) +
+  
+   geom_line(aes(y = `emeryci`, group = 1, color = "emeryci"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `emeryci`, color = "emeryci", shape = "emeryci"), size = 3) +
+  
+   geom_line(aes(y = `renciści`, group = 1, color = "renciści"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `renciści`, color = "renciści", shape = "renciści"), size = 3) +
+  
+  geom_line(aes(y = `niezarobkowe źródła`, group = 1, color = "niezarobkowe źródła"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `niezarobkowe źródła`, color = "niezarobkowe źródła", shape = "niezarobkowe źródła"), size = 3) +
+  
+geom_text_repel(aes(y = `pracujący na własny rachunek`, label = round(`pracujący na własny rachunek`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `pracownicy`, label = round(`pracownicy`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `rolnicy`, label = round(`rolnicy`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `emeryci`, label = round(`emeryci`, 2)), size = 3, color = "black") +  
+geom_text_repel(aes(y = `renciści`, label = round(`renciści`, 2)), size = 3, color = "black") +  
+geom_text_repel(aes(y = `niezarobkowe źródła`, label = round(`niezarobkowe źródła`, 2)), size = 3, color = "black") +
+
+   scale_y_continuous(
+   breaks = seq(0, 45, by = 2),
+    limits = c(0, 45),
+    expand = c(0, 2)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("pracujący na własny rachunek" = 15, "pracownicy" = 16, "rolnicy" = 17, "emeryci" = 18, "renciści" = 19, "niezarobkowe źródła" = 20)) +
+  theme(legend.position = "left") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg ubóstwa relatywnego w %",
+    color = "Źródło utrzymania",
+    shape = "Źródło utrzymania"
+  )
+
+źródło_utrzymania_relatywne_wykres
+```
+
+## źródło_utrzymania_ustawowe 
+
+```{r}
+źródło_utrzymania_ustawowe_wykres <- ggplot(źródło_utrzymania_ustawowe, aes(x = Rok)) +
+  
+  geom_line(aes(y = `pracujący na własny rachunek`, group = 1, color = "pracujący na własny rachunek"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `pracujący na własny rachunek`, color = "pracujący na własny rachunek", shape = "pracujący na własny rachunek"), size = 3) +
+  
+  geom_line(aes(y = `pracownicy`, group = 1, color = "pracownicy"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `pracownicy`, color = "pracownicy", shape = "pracownicy"), size = 3) +
+  
+  geom_line(aes(y = `rolnicy`, group = 1, color = "rolnicy"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `rolnicy`, color = "rolnicy", shape = "rolnicy"), size = 3) +
+  
+   geom_line(aes(y = `emeryci`, group = 1, color = "emeryci"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `emeryci`, color = "emeryci", shape = "emeryci"), size = 3) +
+  
+   geom_line(aes(y = `renciści`, group = 1, color = "renciści"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `renciści`, color = "renciści", shape = "renciści"), size = 3) +
+  
+  geom_line(aes(y = `niezarobkowe źródła`, group = 1, color = "niezarobkowe źródła"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `niezarobkowe źródła`, color = "niezarobkowe źródła", shape = "niezarobkowe źródła"), size = 3) +
+  
+geom_text_repel(aes(y = `pracujący na własny rachunek`, label = round(`pracujący na własny rachunek`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `pracownicy`, label = round(`pracownicy`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `rolnicy`, label = round(`rolnicy`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `emeryci`, label = round(`emeryci`, 2)), size = 3, color = "black") +  
+geom_text_repel(aes(y = `renciści`, label = round(`renciści`, 2)), size = 3, color = "black") +  
+geom_text_repel(aes(y = `niezarobkowe źródła`, label = round(`niezarobkowe źródła`, 2)), size = 3, color = "black") +
+
+   scale_y_continuous(
+   breaks = seq(0, 36, by = 2),
+    limits = c(0, 36),
+    expand = c(0, 2)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("pracujący na własny rachunek" = 15, "pracownicy" = 16, "rolnicy" = 17, "emeryci" = 18, "renciści" = 19, "niezarobkowe źródła" = 20)) +
+  theme(legend.position = "left") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg ubóstwa ustawowego w %",
+    color = "Źródło utrzymania",
+    shape = "Źródło utrzymania"
+  )
+
+źródło_utrzymania_ustawowe_wykres
+```
+
+  ## MiejscowośćSkrajneWykres
+
+```{r}
+MiejscowośćSkrajneWykres <- ggplot(MiejscowośćSkrajne, aes(x = Rok)) +
+  
+  geom_line(aes(y = `Miasta ogółem`, group = 1, color = "Miasta ogółem"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `Miasta ogółem`, color = "Miasta ogółem", shape = "Miasta ogółem"), size = 3) +
+  
+  geom_line(aes(y = `Miasta 500 tys. +`, group = 1, color = "Miasta 500 tys. +"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `Miasta 500 tys. +`, color = "Miasta 500 tys. +", shape = "Miasta 500 tys. +"), size = 3) +
+  
+  geom_line(aes(y = `Miasta 20-99 tys.`, group = 1, color = "Miasta 20-99 tys."), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `Miasta 20-99 tys.`, color = "Miasta 20-99 tys.", shape = "Miasta 20-99 tys."), size = 3) +
+  
+   geom_line(aes(y = `Miasta poniżej 20 tys.`, group = 1, color = "Miasta poniżej 20 tys."), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `Miasta poniżej 20 tys.`, color = "Miasta poniżej 20 tys.", shape = "Miasta poniżej 20 tys."), size = 3) +
+  
+   geom_line(aes(y = Wsie, group = 1, color = "Wsie"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = Wsie, color = "Wsie", shape = "Wsie"), size = 3) +
+  
+  
+geom_text_repel(aes(y = `Miasta ogółem`, label = round(`Miasta ogółem`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `Miasta 500 tys. +`, label = round(`Miasta 500 tys. +`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `Miasta 20-99 tys.`, label = round(`Miasta 20-99 tys.`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `Miasta poniżej 20 tys.`, label = round(`Miasta poniżej 20 tys.`, 2)), size = 3, color = "black") +  
+geom_text_repel(aes(y = `Wsie`, label = round(`Wsie`, 2)), size = 3, color = "black") +  
+
+   scale_y_continuous(
+   breaks = seq(0, 15, by = 2),
+    limits = c(0, 15),
+    expand = c(0, 2)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("Miasta ogółem" = 15, "Miasta 500 tys. +" = 16, "Miasta 20-99 tys." = 17, "Miasta poniżej 20 tys." = 18, "Wsie" = 19)) +
+  theme(legend.position = "left") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg ubóstwa skrajnego w %",
+    color = "Miejscowość zamieszkania",
+    shape = "Miejscowość zamieszkania"
+  )
+
+MiejscowośćSkrajneWykres 
+```
+
+## MiejscowośćRelatywneWykres
+
+```{r}
+MiejscowośćRelatywneWykres <- ggplot(MiejscowośćRelatywne, aes(x = Rok)) +
+  
+  geom_line(aes(y = `Miasta ogółem`, group = 1, color = "Miasta ogółem"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `Miasta ogółem`, color = "Miasta ogółem", shape = "Miasta ogółem"), size = 3) +
+  
+  geom_line(aes(y = `Miasta 500 tys. +`, group = 1, color = "Miasta 500 tys. +"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `Miasta 500 tys. +`, color = "Miasta 500 tys. +", shape = "Miasta 500 tys. +"), size = 3) +
+  
+  geom_line(aes(y = `Miasta 20-99 tys.`, group = 1, color = "Miasta 20-99 tys."), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `Miasta 20-99 tys.`, color = "Miasta 20-99 tys.", shape = "Miasta 20-99 tys."), size = 3) +
+  
+   geom_line(aes(y = `Miasta poniżej 20 tys.`, group = 1, color = "Miasta poniżej 20 tys."), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `Miasta poniżej 20 tys.`, color = "Miasta poniżej 20 tys.", shape = "Miasta poniżej 20 tys."), size = 3) +
+  
+   geom_line(aes(y = Wsie, group = 1, color = "Wsie"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = Wsie, color = "Wsie", shape = "Wsie"), size = 3) +
+  
+  
+geom_text_repel(aes(y = `Miasta ogółem`, label = round(`Miasta ogółem`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `Miasta 500 tys. +`, label = round(`Miasta 500 tys. +`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `Miasta 20-99 tys.`, label = round(`Miasta 20-99 tys.`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `Miasta poniżej 20 tys.`, label = round(`Miasta poniżej 20 tys.`, 2)), size = 3, color = "black") +  
+geom_text_repel(aes(y = `Wsie`, label = round(`Wsie`, 2)), size = 3, color = "black") +  
+
+   scale_y_continuous(
+   breaks = seq(0, 30, by = 2),
+    limits = c(0, 30),
+    expand = c(0, 2)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("Miasta ogółem" = 15, "Miasta 500 tys. +" = 16, "Miasta 20-99 tys." = 17, "Miasta poniżej 20 tys." = 18, "Wsie" = 19)) +
+  theme(legend.position = "left") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg ubóstwa relatywnego w %",
+    color = "Miejscowość zamieszkania",
+    shape = "Miejscowość zamieszkania"
+  )
+
+MiejscowośćRelatywneWykres 
+```
+
+## MiejscowośćUstawoweWykres 
+
+```{r}
+MiejscowośćUstawoweWykres <- ggplot(MiejscowośćUstawowe, aes(x = Rok)) +
+  
+  geom_line(aes(y = `Miasta ogółem`, group = 1, color = "Miasta ogółem"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `Miasta ogółem`, color = "Miasta ogółem", shape = "Miasta ogółem"), size = 3) +
+  
+  geom_line(aes(y = `Miasta 500 tys. +`, group = 1, color = "Miasta 500 tys. +"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `Miasta 500 tys. +`, color = "Miasta 500 tys. +", shape = "Miasta 500 tys. +"), size = 3) +
+  
+  geom_line(aes(y = `Miasta 20-99 tys.`, group = 1, color = "Miasta 20-99 tys."), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `Miasta 20-99 tys.`, color = "Miasta 20-99 tys.", shape = "Miasta 20-99 tys."), size = 3) +
+  
+   geom_line(aes(y = `Miasta poniżej 20 tys.`, group = 1, color = "Miasta poniżej 20 tys."), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `Miasta poniżej 20 tys.`, color = "Miasta poniżej 20 tys.", shape = "Miasta poniżej 20 tys."), size = 3) +
+  
+   geom_line(aes(y = Wsie, group = 1, color = "Wsie"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = Wsie, color = "Wsie", shape = "Wsie"), size = 3) +
+  
+  
+geom_text_repel(aes(y = `Miasta ogółem`, label = round(`Miasta ogółem`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `Miasta 500 tys. +`, label = round(`Miasta 500 tys. +`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `Miasta 20-99 tys.`, label = round(`Miasta 20-99 tys.`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `Miasta poniżej 20 tys.`, label = round(`Miasta poniżej 20 tys.`, 2)), size = 3, color = "black") +  
+geom_text_repel(aes(y = `Wsie`, label = round(`Wsie`, 2)), size = 3, color = "black") +  
+
+   scale_y_continuous(
+   breaks = seq(0, 20, by = 2),
+    limits = c(0, 20),
+    expand = c(0, 2)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("Miasta ogółem" = 15, "Miasta 500 tys. +" = 16, "Miasta 20-99 tys." = 17, "Miasta poniżej 20 tys." = 18, "Wsie" = 19)) +
+  theme(legend.position = "left") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg ubóstwa ystawowego w %",
+    color = "Miejscowość zamieszkania",
+    shape = "Miejscowość zamieszkania"
+  )
+
+MiejscowośćUstawoweWykres 
+```
+
+## WiekSkrajneWykres
+
+```{r}
+WiekSkrajneWykres <- ggplot(WiekSkrajne, aes(x = Rok)) +
+  
+  geom_line(aes(y = `0-17`, group = 1, color = "0-17"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `0-17`, color = "0-17", shape = "0-17"), size = 3) +
+  
+  geom_line(aes(y = `18-64`, group = 1, color = "18-64"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `18-64`, color = "18-64", shape = "18-64"), size = 3) +
+  
+  geom_line(aes(y = `65 +`, group = 1, color = "65 +"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `65 +`, color = "65 +", shape = "65 +"), size = 3) +
+  
+geom_text_repel(aes(y = `0-17`, label = round(`0-17`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `18-64`, label = round(`18-64`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `65 +`, label = round(`65 +`, 2)), size = 3, color = "black") +
+
+   scale_y_continuous(
+   breaks = seq(0, 12, by = 2),
+    limits = c(0, 12),
+    expand = c(0, 2)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("0-17" = 15, "18-64" = 16, "65 +" = 17)) +
+  theme(legend.position = "bottom") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg ubóstwa skrajnego w %",
+    color = "Grupa wiekowa",
+    shape = "Grupa wiekowa"
+  )
+
+WiekSkrajneWykres 
+```
+
+## WiekRelatywneWykres
+
+```{r}
+WiekRelatywneWykres <- ggplot(WiekRelatywne, aes(x = Rok)) +
+  
+  geom_line(aes(y = `0-17`, group = 1, color = "0-17"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `0-17`, color = "0-17", shape = "0-17"), size = 3) +
+  
+  geom_line(aes(y = `18-64`, group = 1, color = "18-64"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `18-64`, color = "18-64", shape = "18-64"), size = 3) +
+  
+  geom_line(aes(y = `65 +`, group = 1, color = "65 +"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `65 +`, color = "65 +", shape = "65 +"), size = 3) +
+  
+geom_text_repel(aes(y = `0-17`, label = round(`0-17`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `18-64`, label = round(`18-64`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `65 +`, label = round(`65 +`, 2)), size = 3, color = "black") +
+
+   scale_y_continuous(
+   breaks = seq(0, 25, by = 2),
+    limits = c(0, 25),
+    expand = c(0, 2)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("0-17" = 15, "18-64" = 16, "65 +" = 17)) +
+  theme(legend.position = "bottom") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg ubóstwa relatywnego w %",
+    color = "Grupa wiekowa",
+    shape = "Grupa wiekowa"
+  )
+
+WiekRelatywneWykres 
+```
+
+## WiekUstawoweWykres
+
+```{r}
+WiekUstawoweWykres <- ggplot(WiekUstawowe, aes(x = Rok)) +
+  
+  geom_line(aes(y = `0-17`, group = 1, color = "0-17"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `0-17`, color = "0-17", shape = "0-17"), size = 3) +
+  
+  geom_line(aes(y = `18-64`, group = 1, color = "18-64"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `18-64`, color = "18-64", shape = "18-64"), size = 3) +
+  
+  geom_line(aes(y = `65 +`, group = 1, color = "65 +"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `65 +`, color = "65 +", shape = "65 +"), size = 3) +
+  
+geom_text_repel(aes(y = `0-17`, label = round(`0-17`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `18-64`, label = round(`18-64`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `65 +`, label = round(`65 +`, 2)), size = 3, color = "black") +
+
+   scale_y_continuous(
+   breaks = seq(0, 25, by = 2),
+    limits = c(0, 25),
+    expand = c(0, 2)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("0-17" = 15, "18-64" = 16, "65 +" = 17)) +
+  theme(legend.position = "bottom") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg ubóstwa ustawowego w %",
+    color = "Grupa wiekowa",
+    shape = "Grupa wiekowa"
+  )
+
+WiekUstawoweWykres 
+```
+
+## DzieciSkrajneWykres 
+
+```{r}
+DzieciSkrajneWykres <- ggplot(DzieciSkrajne, aes(x = Rok)) +
+  
+  geom_line(aes(y = `bez dzieci`, group = 1, color = "bez dzieci"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `bez dzieci`, color = "bez dzieci", shape = "bez dzieci"), size = 3) +
+  
+  geom_line(aes(y = `co najmniej 1`, group = 1, color = "co najmniej 1"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `co najmniej 1`, color = "co najmniej 1", shape = "co najmniej 1"), size = 3) +
+  
+  geom_line(aes(y = `dokładnie 1`, group = 1, color = "dokładnie 1"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `dokładnie 1`, color = "dokładnie 1", shape = "dokładnie 1"), size = 3) +
+  
+   geom_line(aes(y = `dokładnie 2`, group = 1, color = "dokładnie 2"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `dokładnie 2`, color = "dokładnie 2", shape = "dokładnie 2"), size = 3) +
+  
+   geom_line(aes(y = `co najmniej 3`, group = 1, color = "co najmniej 3"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `co najmniej 3`, color = "co najmniej 3", shape = "co najmniej 3"), size = 3) +
+  
+  
+geom_text_repel(aes(y = `bez dzieci`, label = round(`bez dzieci`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `co najmniej 1`, label = round(`co najmniej 1`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `dokładnie 1`, label = round(`dokładnie 1`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `dokładnie 2`, label = round(`dokładnie 2`, 2)), size = 3, color = "black") +  
+geom_text_repel(aes(y = `co najmniej 3`, label = round(`co najmniej 3`, 2)), size = 3, color = "black") +  
+
+   scale_y_continuous(
+   breaks = seq(0, 18, by = 2),
+    limits = c(0, 18),
+    expand = c(0, 2)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("bez dzieci" = 15, "co najmniej 1" = 16, "dokładnie 1" = 17, "dokładnie 2" = 18, "co najmniej 3" = 19)) +
+  theme(legend.position = "left") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg ubóstwa skrajnego w %",
+    color = "Liczba dzieci",
+    shape = "Liczba dzieci"
+  )
+
+DzieciSkrajneWykres 
+```
+
+## DzieciRelatywneWykres 
+
+```{r}
+DzieciRelatywneWykres <- ggplot(DzieciRelatywne, aes(x = Rok)) +
+  
+  geom_line(aes(y = `bez dzieci`, group = 1, color = "bez dzieci"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `bez dzieci`, color = "bez dzieci", shape = "bez dzieci"), size = 3) +
+  
+  geom_line(aes(y = `co najmniej 1`, group = 1, color = "co najmniej 1"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `co najmniej 1`, color = "co najmniej 1", shape = "co najmniej 1"), size = 3) +
+  
+  geom_line(aes(y = `dokładnie 1`, group = 1, color = "dokładnie 1"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `dokładnie 1`, color = "dokładnie 1", shape = "dokładnie 1"), size = 3) +
+  
+   geom_line(aes(y = `dokładnie 2`, group = 1, color = "dokładnie 2"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `dokładnie 2`, color = "dokładnie 2", shape = "dokładnie 2"), size = 3) +
+  
+   geom_line(aes(y = `co najmniej 3`, group = 1, color = "co najmniej 3"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `co najmniej 3`, color = "co najmniej 3", shape = "co najmniej 3"), size = 3) +
+  
+  
+geom_text_repel(aes(y = `bez dzieci`, label = round(`bez dzieci`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `co najmniej 1`, label = round(`co najmniej 1`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `dokładnie 1`, label = round(`dokładnie 1`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `dokładnie 2`, label = round(`dokładnie 2`, 2)), size = 3, color = "black") +  
+geom_text_repel(aes(y = `co najmniej 3`, label = round(`co najmniej 3`, 2)), size = 3, color = "black") +  
+
+   scale_y_continuous(
+   breaks = seq(0, 26, by = 2),
+    limits = c(0, 26),
+    expand = c(0, 2)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("bez dzieci" = 15, "co najmniej 1" = 16, "dokładnie 1" = 17, "dokładnie 2" = 18, "co najmniej 3" = 19)) +
+  theme(legend.position = "left") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg ubóstwa relatywnego w %",
+    color = "Liczba dzieci",
+    shape = "Liczba dzieci"
+  )
+
+DzieciRelatywneWykres 
+```
+
+## DzieciUstawoweWykres
+
+```{r}
+DzieciUstawoweWykres <- ggplot(DzieciUstawowe, aes(x = Rok)) +
+  
+  geom_line(aes(y = `bez dzieci`, group = 1, color = "bez dzieci"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `bez dzieci`, color = "bez dzieci", shape = "bez dzieci"), size = 3) +
+  
+  geom_line(aes(y = `co najmniej 1`, group = 1, color = "co najmniej 1"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `co najmniej 1`, color = "co najmniej 1", shape = "co najmniej 1"), size = 3) +
+  
+  geom_line(aes(y = `dokładnie 1`, group = 1, color = "dokładnie 1"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `dokładnie 1`, color = "dokładnie 1", shape = "dokładnie 1"), size = 3) +
+  
+   geom_line(aes(y = `dokładnie 2`, group = 1, color = "dokładnie 2"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `dokładnie 2`, color = "dokładnie 2", shape = "dokładnie 2"), size = 3) +
+  
+   geom_line(aes(y = `co najmniej 3`, group = 1, color = "co najmniej 3"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `co najmniej 3`, color = "co najmniej 3", shape = "co najmniej 3"), size = 3) +
+  
+  
+geom_text_repel(aes(y = `bez dzieci`, label = round(`bez dzieci`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `co najmniej 1`, label = round(`co najmniej 1`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `dokładnie 1`, label = round(`dokładnie 1`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `dokładnie 2`, label = round(`dokładnie 2`, 2)), size = 3, color = "black") +  
+geom_text_repel(aes(y = `co najmniej 3`, label = round(`co najmniej 3`, 2)), size = 3, color = "black") +  
+
+   scale_y_continuous(
+   breaks = seq(0, 33, by = 2),
+    limits = c(0, 33),
+    expand = c(0, 2)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("bez dzieci" = 15, "co najmniej 1" = 16, "dokładnie 1" = 17, "dokładnie 2" = 18, "co najmniej 3" = 19)) +
+  theme(legend.position = "left") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg ubóstwa ustawowego w %",
+    color = "Liczba dzieci",
+    shape = "Liczba dzieci"
+  )
+
+DzieciUstawoweWykres 
+```
+
+## Głębokość Wykres
+
+```{r}
+GłębokośćWykres <- ggplot(Głębokość, aes(x = Rok)) +
+  geom_line(aes(y = `ubóstwo skrajne`, group = 1, color = "ubóstwo skrajne"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `ubóstwo skrajne`, color = "ubóstwo skrajne", shape = "ubóstwo skrajne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo relatywne`, group = 1, color = "ubóstwo relatywne"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo relatywne`, color = "ubóstwo relatywne", shape = "ubóstwo relatywne"), size = 3) +
+  
+  geom_line(aes(y = `ubóstwo ustawowe`, group = 1, color = "ubóstwo ustawowe"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `ubóstwo ustawowe`, color = "ubóstwo ustawowe", shape = "ubóstwo ustawowe"), size = 3) +
+  
+geom_text_repel(aes(y = `ubóstwo skrajne`, label = round(`ubóstwo skrajne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo relatywne`, label = round(`ubóstwo relatywne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `ubóstwo ustawowe`, label = round(`ubóstwo ustawowe`, 2)), size = 3, color = "black") +
+  
+  scale_y_continuous(
+   breaks = seq(0, 25, by = 2),
+    limits = c(0, 25),
+    expand = c(0, 2)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("ubóstwo skrajne" = 15, "ubóstwo relatywne" = 16, "ubóstwo ustawowe" = 17)) +
+  theme(legend.position = "bottom") +
+  
+  labs(
+    x = "Rok",
+    y = "Głębokość w %",
+    color = "Rodzaj ubóstwa",
+    shape = "Rodzaj ubóstwa"
+  )
+
+GłębokośćWykres
+```
+
+## NiedostatekProgi Tabela
+
+```{r}
+NiedostatekProgiDane <- t(NiedostatekProgi)
+colnames(NiedostatekProgiDane) <- NiedostatekProgiDane[1, ]
+NiedostatekProgiDane <- NiedostatekProgiDane[-1, ] 
+
+NiedostatekProgiTabela <- kable(NiedostatekProgiDane, table.attr = "class='table'",align = "c", digits = 2) %>%
+  kable_paper(c("striped", "hover", "condensed", "responsive", full_width = F, position = "center")) %>% 
+  add_header_above(c("Progi ubóstwa dla gospodarstw 1-osobowych w latach 2008–2022 (zł)" = 16), align = "center")
+
+NiedostatekProgiTabela
+```
+
+## Niedostatek Wykres
+
+```{r}
+NiedostatekWykres <- ggplot(Niedostatek, aes(x = Rok)) +
+  geom_line(aes(y = `ubóstwo skrajne`, group = 1, color = "ubóstwo skrajne"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `ubóstwo skrajne`, color = "ubóstwo skrajne", shape = "ubóstwo skrajne"), size = 3) +
+  
+  geom_line(aes(y = `sfera niedostatku`, group = 1, color = "sfera niedostatku"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `sfera niedostatku`, color = "sfera niedostatku", shape = "sfera niedostatku"), size = 3) +
+  
+geom_text_repel(aes(y = `ubóstwo skrajne`, label = round(`ubóstwo skrajne`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `sfera niedostatku`, label = round(`sfera niedostatku`, 2)), size = 3, color = "black") +
+
+  scale_y_continuous(
+   breaks = seq(0, 50, by = 2),
+    limits = c(0, 50),
+    expand = c(0, 2)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("ubóstwo skrajne" = 15, "sfera niedostatku" = 16)) +
+  theme(legend.position = "bottom") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg w %",
+    color = "Rodzaj ubóstwa",
+    shape = "Rodzaj ubóstwa"
+  )
+
+NiedostatekWykres
+```
+
+## AROPEWykres
+
+```{r}
+AROPEWykres <- ggplot(AROPE, aes(x = Rok)) +
+  
+  geom_line(aes(y = `AROPE`, group = 1, color = "AROPE"), show.legend = TRUE, size = 1.5, linetype = "solid", ) +
+  geom_point(aes(y = `AROPE`, color = "AROPE", shape = "AROPE"), size = 3) +
+  
+  geom_line(aes(y = `AROP`, group = 1, color = "AROP"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `AROP`, color = "AROP", shape = "AROP"), size = 3) +
+  
+  geom_line(aes(y = `SMSD`, group = 1, color = "SMSD"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `SMSD`, color = "SMSD", shape = "SMSD"), size = 3) +
+  
+   geom_line(aes(y = `VLWI`, group = 1, color = "VLWI"), show.legend = TRUE, size = 1.5, linetype = "solid") +
+  geom_point(aes(y = `VLWI`, color = "VLWI", shape = "VLWI"), size = 3) +
+  
+geom_text_repel(aes(y = `AROPE`, label = round(`AROPE`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `AROP`, label = round(`AROP`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `SMSD`, label = round(`SMSD`, 2)), size = 3, color = "black") +
+geom_text_repel(aes(y = `VLWI`, label = round(`VLWI`, 2)), size = 3, color = "black") +  
+
+   scale_y_continuous(
+   breaks = seq(0, 25, by = 1),
+    limits = c(0, 25),
+    expand = c(0, 1)) +
+  theme_stata() +
+  scale_fill_stata() +
+  scale_color_stata() +
+  scale_shape_manual(values = c("AROPE" = 15, "AROP" = 16, "SMSD" = 17, "VLWI" = 18)) +
+  theme(legend.position = "bottom") +
+  
+  labs(
+    x = "Rok",
+    y = "Zasięg w %",
+    color = "Wskaźnik",
+    shape = "Wskaźnik"
+  )
+
+AROPEWykres 
+```
+
+## WojAROP2008Wykres
+
+```{r}
+województwa <- geojson_sf("https://raw.githubusercontent.com/Tomasz-Olczyk/testowe-repozytrium/main/gadm41_POL_1.json")
+
+województwa_s <- województwa %>%
+  select(NAME_1, geometry) %>%
+  mutate(województwo = NAME_1)
+
+WojAROP2008Dane <- left_join(województwa_s, WojAROP2008,
+                  by = "województwo")
+
+WojAROP2008Wykres <- ggplot(WojAROP2008Dane) +
+  geom_sf(aes(fill = AROP)) +
+  geom_point(data = WojAROP2008Dane, aes(x = as.numeric(LON), y = as.numeric(LAT))) +
+  geom_text(aes(x = as.numeric(LON), y = as.numeric(LAT) - 0.1, label = AROP, group = AROP), size = 5, colour = 'black') +
+  geom_text(aes(x = as.numeric(LON), y = as.numeric(LAT) + 0.1, label = województwo, group = AROP), size = 3, colour = 'black') +
+  coord_sf() +
+theme_void() +
+  scale_fill_gradient2(
+  low = "#e6f2ff",
+  mid = "#0b4bb3",
+  high = "#022e75",
+  midpoint = 20,
+  na.value = "grey50",
+  guide = "colourbar",
+  aesthetics = "fill"
+)
+
+WojAROP2008Wykres
+```
+
+## WojAROP2022Wykres
+
+```{r}
+województwa <- geojson_sf("https://raw.githubusercontent.com/Tomasz-Olczyk/testowe-repozytrium/main/gadm41_POL_1.json")
+
+województwa_s <- województwa %>%
+  select(NAME_1, geometry) %>%
+  mutate(województwo = NAME_1)
+
+WojAROP2022Dane <- left_join(województwa_s, WojAROP2022,
+                  by = "województwo")
+
+WojAROP2022Wykres <- ggplot(WojAROP2022Dane) +
+  geom_sf(aes(fill = AROP)) +
+  geom_point(data = WojAROP2022Dane, aes(x = as.numeric(LON), y = as.numeric(LAT))) +
+  geom_text(aes(x = as.numeric(LON), y = as.numeric(LAT) - 0.1, label = AROP, group = AROP), size = 5, colour = 'black') +
+  geom_text(aes(x = as.numeric(LON), y = as.numeric(LAT) + 0.1, label = województwo, group = AROP), size = 3, colour = 'black') +
+  coord_sf() +
+theme_void() +
+  scale_fill_gradient2(
+  low = "#e6f2ff",
+  mid = "#0b4bb3",
+  high = "#022e75",
+  midpoint = 15.6,
+  na.value = "grey50",
+  guide = "colourbar",
+  aesthetics = "fill"
+)
+
+WojAROP2022Wykres
+```
